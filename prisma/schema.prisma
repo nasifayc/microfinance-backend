@@ -12,3 +12,207 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model Customer {
+  id String @id @default(uuid())
+  firstName String 
+  lastName String
+  phone String @unique
+  email String? 
+  nationalId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  loans Loan[]
+  savingAccounts SavingsAccount[]
+}
+
+model Staff {
+  id String @id @default(uuid())
+  firstName String
+  lastName String
+  email String @unique
+  password String
+
+  status StaffStatus @default(ACTIVE)
+
+  branchId String
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  roles StaffRole[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Branch {
+  id String @id @default(uuid())
+  name String
+  address String
+  staff Staff[]
+  loans Loan[]
+}
+
+enum StaffStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+
+
+model LoanProduct {
+  id String @id @default(uuid())
+  name String
+  interestRate Float
+  durationMonths Int
+  loans Loan[]
+}
+
+
+model Loan {
+  id String @id @default(uuid())
+  principalAmount Decimal
+  interestAmount Float
+  totalAmount Decimal
+  remainingBalance Decimal
+  status String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customerId String
+  branchId String
+  productId String
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  product LoanProduct @relation(fields: [productId], references: [id])
+
+  schedules RepaymentSchedule[]
+  repayments Repayment[]
+}
+
+model RepaymentSchedule {
+  id String @id @default(uuid())
+  installmentNumber Int
+  dueDate DateTime
+  amountDue Decimal
+  status String
+
+
+  loanId String
+  loan Loan @relation(fields: [loanId], references: [id])
+}
+
+model Repayment {
+  id String @id @default(uuid())
+  amountPaid Decimal
+  paymentMethod String
+  paidAt DateTime @default(now())
+
+  loanId String
+  loan Loan @relation(fields: [loanId], references: [id])
+
+  transaction Transaction[]
+}
+
+model SavingsAccount {
+  id String @id @default(uuid())
+  balance Decimal
+  createdAt DateTime @default(now())
+
+  customerId String
+  customer Customer @relation(fields: [customerId], references: [id])
+}
+
+
+model Transaction {
+  id String @id @default(uuid())
+  amount Decimal
+  type String
+  createdAt  DateTime @default(now())
+
+  repaymentId String
+  repayment Repayment @relation(fields: [repaymentId], references: [id])
+
+  journalEntries JournalEntry?
+}
+
+model Account {
+  id String @id @default(uuid())
+  name String
+  accountType String
+
+  journalLines JournalLine[]
+}
+
+model JournalEntry {
+  id String @id @default(uuid())
+  description String
+  createdAt DateTime @default(now())
+
+  transactionId String @unique
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+
+  lines JournalLine[]
+}
+
+
+model JournalLine {
+  id String @id @default(uuid())
+  debit Decimal
+  credit Decimal
+
+  entryId String
+  accountId String
+
+  entry JournalEntry @relation(fields: [entryId], references: [id])
+  account Account @relation(fields: [accountId], references: [id])
+}
+
+model Role {
+  id String @id @default(uuid())
+  name String @unique
+  description String?
+
+  staff StaffRole[]
+  permissions RolePermission[]
+}
+
+
+model StaffRole {
+  id String @id @default(uuid())
+
+  staffId String
+  roleId String
+
+  staff Staff @relation(fields: [staffId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@unique([staffId, roleId])
+}
+
+model Permission {
+  id String @id @default(uuid())
+  name String @unique
+  description String?
+
+  roles RolePermission[]
+}
+
+
+model RolePermission {
+  id String @id @default(uuid())
+
+
+  roleId String
+  permissionId String
+
+  role Role @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([roleId, permissionId])
+}
+
+
+
