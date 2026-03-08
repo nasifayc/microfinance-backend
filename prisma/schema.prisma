@@ -34,7 +34,7 @@ model Staff {
   email String @unique
   password String
 
-  status StaffStatus @default(ACTIVE)
+  status StaffStatus @default(INACTIVE)
 
   branchId String
   branch Branch @relation(fields: [branchId], references: [id])
