@@ -7,10 +7,29 @@
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum TokenType {
+  REFRESH
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+model Token {
+  id String @id @default(uuid())
+  type TokenType
+  tokenHash String
+  expiresAt DateTime
+
+  staffId String
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
 }
 
 model Customer {
@@ -36,8 +55,14 @@ model Staff {
 
   status StaffStatus @default(INACTIVE)
 
+  emailVerified Boolean @default(false)
+  emailVerifiedAt DateTime?
+
   branchId String
   branch Branch @relation(fields: [branchId], references: [id])
+
+  tokens Token[]
+
 
   roles StaffRole[]
 
