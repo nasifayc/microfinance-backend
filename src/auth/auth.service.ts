@@ -1,44 +1,69 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { SignInDto } from './dto';
 
 import * as argon from 'argon2';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
-    // private jwt: JwtService,
+    private jwt: JwtService,
+    private config: ConfigService,
   ) {}
 
-  login(dto: SignInDto) {
-    return { message: 'Login successful', data: dto };
-    // const staff = await this.prisma.staff.findUnique({
-    //   where: { email: dto.email },
-    //   include: {
-    //     roles: {
-    //       include: {
-    //         role: true,
-    //       },
-    //     },
-    //   },
-    // });
+  async login(dto: SignInDto) {
+    const user = await this.prisma.staff.findUnique({
+      where: { email: dto.email },
+    });
 
-    // if (!staff) {
-    //   throw new UnauthorizedException('Invalid email or password');
-    // }
+    if (!user) throw new UnauthorizedException('Invalid credentials');
 
-    // const passwordValid = await argon.verify(staff.password, dto.password);
+    const pwMatches = await argon.verify(user.password, dto.password);
+    if (!pwMatches) throw new UnauthorizedException('Invalid credentials');
 
-    // if (!passwordValid) {
-    //   throw new UnauthorizedException('Invalid email or password');
-    // }
+    if (!user.emailVerified) throw new ForbiddenException('Email Not verfied');
 
-    // if (staff.status !== 'ACTIVE') {
-    //   throw new UnauthorizedException('Account is not active');
-    // }
+    const tokens = await this.signToken(user.id, user.email);
+    return tokens;
+  }
 
-    // const tokens = await this.generateTokens(staff);
+  async signToken(
+    userId: string,
+    email: string,
+  ): Promise<{ access_token: string; refresh_token: string }> {
+    const payload = {
+      sub: userId,
+      email,
+    };
+
+    const access_token = await this.jwt.signAsync(payload, {
+      secret: this.config.get('JWT_SECRET'),
+      expiresIn: '15m',
+    });
+
+    const refresh_token = await this.jwt.signAsync(payload, {
+      secret: this.config.get('JWT_REFRESH_SECRET'),
+      expiresIn: '7d',
+    });
+
+    const hash = await argon.hash(refresh_token);
+
+    await this.prisma.token.create({
+      data: {
+        type: 'REFRESH',
+        tokenHash: hash,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        staffId: userId,
+      },
+    });
+
+    return { access_token, refresh_token };
   }
 }
