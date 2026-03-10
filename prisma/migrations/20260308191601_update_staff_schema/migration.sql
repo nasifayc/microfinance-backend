@@ -1,0 +1,7 @@
+-- CreateEnum
+CREATE TYPE "TokenType" AS ENUM ('REFRESH', 'EMAIL_VERIFICATION', 'PASSWORD_RESET');
+
+-- AlterTable
+ALTER TABLE "Staff" ADD COLUMN     "emailVerified" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "emailVerifiedAt" TIMESTAMP(3),
+ALTER COLUMN "status" SET DEFAULT 'INACTIVE';
