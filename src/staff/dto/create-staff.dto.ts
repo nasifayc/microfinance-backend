@@ -1,6 +1,12 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable prettier/prettier */
-import { IsString, IsEmail, IsOptional, IsEnum, IsUUID, IsArray } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsOptional,
+  IsEnum,
+  IsUUID,
+  IsArray,
+  MinLength,
+} from 'class-validator';
 import { StaffStatus } from 'generated/prisma/enums';
 
 export class CreateStaffDto {
@@ -14,6 +20,7 @@ export class CreateStaffDto {
   email: string;
 
   @IsString()
+  @MinLength(6)
   password: string;
 
   @IsUUID()
@@ -23,9 +30,8 @@ export class CreateStaffDto {
   @IsEnum(StaffStatus)
   status?: StaffStatus;
 
-  // incoming role ids when assigning multiple roles during creation
   @IsOptional()
   @IsArray()
   @IsUUID('all', { each: true })
-  roleIds?: string[];
+  rolesIds?: string[];
 }
