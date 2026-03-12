@@ -1,36 +1,42 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable prettier/prettier */
-
-import { IsString, IsEmail, IsOptional, IsEnum, IsUUID, IsArray } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsOptional,
+  IsEnum,
+  IsUUID,
+  IsArray,
+  MinLength,
+} from 'class-validator';
 import { StaffStatus } from 'generated/prisma/enums';
 
 export class UpdateStaffDto {
   @IsOptional()
   @IsString()
-  firstName?: string;
+  firstName: string;
 
   @IsOptional()
   @IsString()
-  lastName?: string;
+  lastName: string;
 
   @IsOptional()
   @IsEmail()
-  email?: string;
+  email: string;
 
   @IsOptional()
   @IsString()
-  password?: string;
+  @MinLength(6)
+  password: string;
+
+  @IsOptional()
+  @IsUUID()
+  branchId: string;
 
   @IsOptional()
   @IsEnum(StaffStatus)
   status?: StaffStatus;
 
   @IsOptional()
-  @IsUUID()
-  branchId?: string;
-
-  @IsOptional()
   @IsArray()
   @IsUUID('all', { each: true })
-  roleIds?: string[];
+  rolesId?: string[];
 }
